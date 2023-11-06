@@ -1,13 +1,13 @@
-import setting
+from app.setting import SMS_ACTIVATE_API_KEY
 from smsactivate.api import SMSActivateAPI
 
 
-class HappnAutomator:
+class SMSService:
     def __init__(self, name):
         self.name = name
         self.happn_service_code = "df"
         self.sms_activate_service = SMSActivateAPI(
-            setting.SMS_ACTIVATE_API_KEY)
+            SMS_ACTIVATE_API_KEY)
         try:
             self.top_countries_for_service = self.sms_activate_service.getTopCountriesByService(
                 service=self.happn_service_code, freePrice=True)
@@ -18,13 +18,14 @@ class HappnAutomator:
 
         try:
             balance = self.sms_activate_service.getBalanceAndCashBack()
-            self.balance = float(balance.balance)
+            print(balance)
+            self.balance = float(balance.get('balance'))
         except:
-            balance = 0
+            self.balance = 0
 
     def get_virtual_number(self):
         number = {'activationId': '', 'phoneNumber': ''}
-        while number['activationId'] == '' and number['phoneNumber'] == '':
+        while number.get('activationId') == '' and number.get('phoneNumber') == '':
             try:
                 number = self.sms_activate_service.getNumberV2(
                     service=self.happn_service_code, phoneException=0)
