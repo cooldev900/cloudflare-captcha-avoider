@@ -1,9 +1,9 @@
-from app.HappnAutomator import HappnAutomator
+from app.AccountCreator import AccountCreator
 
 def main():
     # Your code goes here
     print("Hello, world!")
-    print(HappnAutomator("Happn Automation Service").get_virtual_number())
+    print(AccountCreator().create_happn_account())
 
 # Call the main function
 if __name__ == "__main__":
