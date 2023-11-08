@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 import time
 from app.setting import HAPPN_URL, COUNTRIES, CODES
 from app.SMSService import SMSService
+import os
 
 
 class AccountCreator:
@@ -14,6 +15,13 @@ class AccountCreator:
         self.browser = webdriver.Chrome()
         self.browser.get(HAPPN_URL)
         self.wait = WebDriverWait(self.browser, 30)
+        self.personal_info = {
+            'day': '11',
+            'month': '3',
+            'year': '2021',
+            'first_name': 'Lousia',
+            'gender': 'male',
+        }
 
     def __del__(self):
         time.sleep(10)
@@ -27,11 +35,11 @@ class AccountCreator:
             print(
                 f'activationId: {activation_id}, status: {activation_status}')
             if activation_status.startswith('STATUS_OK'):
-                return activation_status.replace('STATUS_OK', '')
+                return activation_status.replace('STATUS_OK:', '')
             if activation_status == 'STATUS_WAIT_CODE':
-                time.sleep(10)
+                time.sleep(5)
                 retry_count += 1
-            if retry_count == 30:
+            if retry_count == 6:
                 return ""
 
     def create_happn_account(self):
@@ -69,31 +77,32 @@ class AccountCreator:
         time.sleep(5)
 
         # get top countries for happn service
-        for service_data in self.sms_service.top_countries_for_service.values():
+        # for service_data in self.sms_service.top_countries_for_service.values():
             # enter phone number and get activation code
             # {'country': 78, 'count': 6406, 'price': 5, 'retail_price': 10}
-            if service_data.get('country') == 78:
-                continue
-            count = service_data.get('count')
-            code = ''
-            while count > 0:
-                phone_number = self.sms_service.get_virtual_number(
-                    service_data.get('country'))
-                activation_id = phone_number.get('activationId')
-                print(f'activationID {activation_id}')
-                self.enter_phone_number(phone_number)
-                time.sleep(60)
-                code = self.get_sms_code(activation_id)
-                print(f'code: {code}')
-                if not code:
-                    count -= 1
-                    self.browser.back()
-                    time.sleep(1)
-                else:
-                    self.continue_registration_with_sms_code(code)
-                    return
+            # if service_data.get('country') == 78:
+            #     continue
+            # count = service_data.get('count')
+            # code = ''
+            # while count > 0:
+                # phone_number = self.sms_service.get_virtual_number(service_data.get('country'))
+        phone_number = {'activationId': '1878578568', 'phoneNumber': '12056269972', 'activationCost': '10.00', 'countryCode': '12', 'canGetAnotherSms': True, 'activationTime': '2023-11-08 05:06:12', 'activationOperator': 'tim'}
+                # activation_id = phone_number.get('activationId')
+                # print(f'activationID {activation_id}')
+        self.enter_phone_number(phone_number)
+        time.sleep(60)
+                # time.sleep(30)
+                # code = self.get_sms_code(activation_id)
+                # print(f'code: {code}')
+                # if not code:
+                #     count -= 1
+                #     self.browser.back()
+                #     time.sleep(1)
+                # else:
+        self.continue_registration_with_sms_code(self.personal_info)
+                    # return
 
-        print(f'code: {code}')
+        # print(f'code: {code}')
 
     def enter_phone_number(self, phone_number):
         country_name = COUNTRIES.get(phone_number.get('countryCode'))
@@ -149,29 +158,29 @@ class AccountCreator:
         self.sms_service.sms_activate_service.setStatus(id=phone_number.get('activationID'),status=1)
         time.sleep(1)
 
-    def continue_registration_with_sms_code(self, sms_code, personal_info):
-        self.wait.until(EC.url_to_be(
-            "https://happn.app/registration/phone/verify"))
-        code_divs = self.wait.until(EC.visibility_of_element_located(
-            (By.XPATH, '//div[@data-testid="code-input"]')))
-        input1 = code_divs.find_element(By.XPATH, '//div/input[1]')
-        input1.send_keys(sms_code[0])
-        input2 = code_divs.find_element(By.XPATH, '//div/input[2]')
-        input2.send_keys(sms_code[1])
-        input3 = code_divs.find_element(By.XPATH, '//div/input[3]')
-        input3.send_keys(sms_code[2])
-        input4 = code_divs.find_element(By.XPATH, '//div/input[4]')
-        input4.send_keys(sms_code[3])
-        time.sleep(1)
+    def continue_registration_with_sms_code(self, personal_info):
+        # self.wait.until(EC.url_to_be(
+        #     "https://happn.app/registration/phone/verify"))
+        # code_divs = self.wait.until(EC.visibility_of_element_located(
+        #     (By.XPATH, '//div[@data-testid="code-input"]')))
+        # input1 = code_divs.find_element(By.XPATH, '//div/input[1]')
+        # input1.send_keys(sms_code[0])
+        # input2 = code_divs.find_element(By.XPATH, '//div/input[2]')
+        # input2.send_keys(sms_code[1])
+        # input3 = code_divs.find_element(By.XPATH, '//div/input[3]')
+        # input3.send_keys(sms_code[2])
+        # input4 = code_divs.find_element(By.XPATH, '//div/input[4]')
+        # input4.send_keys(sms_code[3])
+        # time.sleep(1)
 
-        continue_button_in_phone_number = self.wait.until(EC.element_to_be_clickable(
-            (By.XPATH, '//button[@data-testid="btn-submit-registration-phone"]')))
-        print(f'{continue_button_in_phone_number.get_attribute("outerHTML")}')
-        if continue_button_in_phone_number.is_enabled() == False:
-            print("false")
-            time.sleep(2)
-        continue_button_in_phone_number.click()
-        time.sleep(1)
+        # continue_button_in_phone_number = self.wait.until(EC.element_to_be_clickable(
+        #     (By.XPATH, '//button[@data-testid="btn-submit-registration-phone"]')))
+        # print(f'{continue_button_in_phone_number.get_attribute("outerHTML")}')
+        # if continue_button_in_phone_number.is_enabled() == False:
+        #     print("false")
+        #     time.sleep(2)
+        # continue_button_in_phone_number.click()
+        # time.sleep(1)
 
         self.wait.until(EC.url_to_be(
             "https://happn.app/registration/birth-date"))
@@ -252,8 +261,8 @@ class AccountCreator:
             "https://happn.app/registration/pictures"))
         for value in [1, 2]:
             upload_file = os.path.abspath(os.path.join(
-                os.path.dirname(__file__), "..", f"photo/{value}.png"))
-            print(upload_file)
+                os.path.dirname(__file__), "..", f"photo/{value}.jpeg"))
+            print(f'file path: {upload_file}')
             image_input = self.wait.until(EC.visibility_of_element_located(
                 (By.XPATH, '//input[@type="file"]')))
             image_input.send_keys(upload_file)
@@ -272,6 +281,3 @@ class AccountCreator:
             time.sleep(2)
         continue_picture_registration_button.click()
         time.sleep(1)
-
-    def test(self):
-        print(self.sms_service.get_sms_code_from_history('1862215766'))
