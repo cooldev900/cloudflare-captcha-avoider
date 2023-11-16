@@ -15,7 +15,7 @@ class CloudFlareService:
             "key": API_KEY,
             "method": "turnstile",
             "sitekey": sitekey,
-            "pageurl": "https://2captcha.com/demo/cloudflare-turnstile",
+            "pageurl": "https://visa.vfsglobal.com/gbr/en/ita/login",
             "json": 1
         }
 
