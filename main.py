@@ -1,9 +1,9 @@
-from app.AccountCreator import AccountCreator
+from app.CloudFlareAvoider import CloudFlareAvoider
 
 def main():
     # Your code goes here
     print("Hello, world!")
-    print(AccountCreator().create_happn_account())
+    print(CloudFlareAvoider().workflow())
 
 # Call the main function
 if __name__ == "__main__":
