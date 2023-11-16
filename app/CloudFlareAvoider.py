@@ -5,22 +5,51 @@ from selenium.webdriver.common.by import By
 import time
 import requests
 from app.CloudFlareService import CloudFlareService
+from twocaptcha import TwoCaptcha
+from app.setting import API_KEY
+from undetected_chromedriver import Chrome, ChromeOptions
 
 
 class CloudFlareAvoider:
     def __init__(self):
         self.name = "VSF"
-        self.browser = webdriver.Chrome()
-        self.browser.get("https://visa.vfsglobal.com/gbr/en/ita/login")
-        self.wait = WebDriverWait(self.browser, 30)
-        self.cloudFlareService = CloudFlareService()
+        self.url = "https://visa.vfsglobal.com/gbr/en/ita/login"
+        self.site_key = "0x4AAAAAAACYaM3U_Dz-4DN1"
+        # self.cloudFlareService = CloudFlareService()
+        self.solver = TwoCaptcha(API_KEY)
+        self.setup()
 
     def __del__(self):
         time.sleep(10)
         self.browser.close()
 
+    def setup(self):    
+        # Initialize the WebDriver
+        chrome_options = ChromeOptions()
+        chrome_options.add_argument(
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+        )
+        chrome_options.headless = False
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--lang=en-US,en;q=0.9")
+        chrome_options.add_argument("--window-size=1024,768")
+        self.browser = Chrome(options=chrome_options)
+        self.wait = WebDriverWait(self.browser, 200)
+    
+        try:
+            self.inject_turnstile_script()
+            captcha_id, token = self.solve_turnstile()
+            if captcha_id:
+                self.browser.get(self.url)
+                time.sleep(5)
+                self.handle_turnstile_callback(token)
+        finally:
+            self.login()
 
-    def workflow(self):
+
+    def login(self):
+        self.wait.until(EC.url_to_be(self.url))
         # click accept button
         accept_cookie_button = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, '//button[@id="onetrust-accept-btn-handler"]')))
@@ -35,36 +64,57 @@ class CloudFlareAvoider:
         time.sleep(1)
         password.send_keys("homvzSt!Joj3Nm")      
 
-
-        iframe = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'iframe[src*="https://challenges.cloudflare.com/cdn-cgi/challenge-platform"]')))
-        
-        print(iframe.get_attribute('outerHTML'))
-
-        src = iframe.get_attribute('src')
-        print(src)
-
-        sitekey = src.split("/")[-3]
-
-        print(sitekey)
-
-        captcha_id = self.cloudFlareService.get_captcha_id(sitekey=sitekey)
-        if not captcha_id:
-            print("Fetching sitekey id failed")
-            return ""
-        
-        token = self.cloudFlareService.get_cloud_token(id=captcha_id)
-
-        # if not token:
-        #     print("Fetch Token failed")
-        #     # return ""
-        
-        # script = f'document.getElementsByName("cf-turnstile-response")[0].value="something"'
-
-        # self.browser.execute_script(script)
-
         signin_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@mat-stroked-button]")))
         signin_button.click()
-        time.sleep(10)
+        time.sleep(200)
+
+    def solve_turnstile(self):
+        try:
+            result = self.solver.turnstile(
+                sitekey=self.site_key,
+                url=self.url
+            )
+    
+            if "captchaId" in result and "code" in result:
+                captcha_id = result["captchaId"]
+                code = result["code"]
+                print(f"Solved FunCaptcha. Captcha ID: {captcha_id}, Code: {code}")
+                return captcha_id, code
+            else:
+                print(f"Unexpected response format: {result}")
+                return None
+        except Exception as e:
+            print(f"Error solving turnstile: {e}")
+            return None
+
+    def handle_turnstile_callback(self, token):
+        callback_script = f"window.tsCallback('{token}')"
+        self.browser.execute_script(callback_script)
+ 
+    def inject_turnstile_script(self):
+        # Inject the provided JavaScript code into the page
+        script = """
+        const i = setInterval(()=>{
+            if (window.turnstile) {
+                clearInterval(i)
+                window.turnstile.render = (a, b) => {
+                    let p = {
+                        type: "TurnstileTaskProxyless",
+                        websiteKey: b.sitekey,
+                        websiteURL: window.location.href,
+                        data: b.cData,
+                        pagedata: b.chlPageData,
+                        action: b.action,
+                        userAgent: navigator.userAgent
+                    }
+                    console.log(JSON.stringify(p))
+                    window.tsCallback = b.callback
+                    return 'foo'
+                }
+            }
+        }, 10)
+        """
+        self.browser.execute_script(script)
 
 
     
